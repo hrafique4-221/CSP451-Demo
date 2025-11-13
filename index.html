@@ -1,53 +1,82 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>Sentiment Analyzer</title>
-<style>
-body { font-family: Arial, sans-serif; margin: 50px; }
-textarea { width: 100%; height: 100px; }
-button { margin-top: 10px; }
-#results { margin-top: 20px; }
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sentiment Analysis Demo</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f4f4f4;
+            margin: 0;
+            padding: 20px;
+        }
+        h1 {
+            color: #333;
+        }
+        textarea {
+            width: 100%;
+            height: 100px;
+            margin-bottom: 10px;
+            padding: 10px;
+            font-size: 16px;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        pre {
+            background: #fff;
+            padding: 10px;
+            margin-top: 20px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+    </style>
 </head>
 <body>
+    <h1>Sentiment Analysis Demo</h1>
+    <textarea id="inputText" placeholder="Type your text here..."></textarea><br>
+    <button onclick="analyzeText()">Analyze</button>
+    <pre id="result"></pre>
 
-<h1>Sentiment Analyzer</h1>
-<textarea id="textInput" placeholder="Enter text here..."></textarea><br>
-<button onclick="analyze()">Analyze</button>
+    <script>
+        async function analyzeText() {
+            const text = document.getElementById("inputText").value.trim();
+            if (!text) {
+                alert("Please enter some text to analyze.");
+                return;
+            }
 
-<div id="results"></div>
+            try {
+                const response = await fetch("https://sentimentweb1890114.azurewebsites.net/analyze", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({ text })
+                });
 
-<script>
-async function analyze() {
-    const text = document.getElementById("textInput").value;
-    if (!text) return alert("Please enter text!");
+                if (!response.ok) {
+                    throw new Error("Backend returned an error: " + response.status);
+                }
 
-    const resDiv = document.getElementById("results");
-    resDiv.innerHTML = "Analyzing...";
+                const data = await response.json();
 
-    try {
-        const response = await fetch("/analyze", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ text })
-        });
-        const data = await response.json();
-        if (data.error) {
-            resDiv.innerHTML = "Error: " + data.error;
-        } else {
-            resDiv.innerHTML = `
-                <b>Sentiment:</b> ${data.sentiment}<br>
-                <b>Confidence:</b> ${JSON.stringify(data.confidenceScores)}<br>
-                <b>Key Phrases:</b> ${data.keyPhrases.join(", ")}
-            `;
+                document.getElementById("result").innerText = `
+Sentiment: ${data.sentiment}
+Confidence Scores: ${JSON.stringify(data.confidenceScores)}
+Key Phrases: ${data.keyPhrases.join(", ")}
+                `;
+            } catch (err) {
+                console.error(err);
+                document.getElementById("result").innerText = "Error analyzing text. Make sure the backend is running.";
+            }
         }
-    } catch (err) {
-        resDiv.innerHTML = "Error connecting to backend.";
-    }
-}
-</script>
-
+    </script>
 </body>
 </html>
+
+
 
