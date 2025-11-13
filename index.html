@@ -1,48 +1,46 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+  <meta charset="UTF-8">
   <title>Sentiment Analysis Demo</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 40px; }
+    input, button { font-size: 16px; padding: 8px; margin: 5px 0; width: 100%; }
+    #results { margin-top: 20px; }
+  </style>
 </head>
 <body>
-  <h1>Sentiment Analysis Demo</h1>
-  <textarea id="userText" rows="4" cols="50" placeholder="Type your text here"></textarea><br>
+  <h1>Azure Sentiment Analysis</h1>
+  <textarea id="userText" placeholder="Type your text here..." rows="4"></textarea>
   <button onclick="analyzeText()">Analyze</button>
 
-  <h2>Results:</h2>
   <div id="results"></div>
 
   <script>
-   async function analyzeText() {
-  const text = document.getElementById('userText').value;
-  if (!text) return alert("Enter text first!");
+    async function analyzeText() {
+      const text = document.getElementById('userText').value;
+      if (!text) return alert("Enter some text first!");
 
-  const response = await fetch("/analyze", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ text })
-  });
+      try {
+        const response = await fetch("/analyze", {   // Calls backend endpoint
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text })
+        });
 
-  const data = await response.json();
-  document.getElementById('results').innerHTML =
-    `<b>Sentiment:</b> ${data.sentiment}<br>` +
-    `<b>Positive:</b> ${data.scores.positive.toFixed(2)}, ` +
-    `<b>Neutral:</b> ${data.scores.neutral.toFixed(2)}, ` +
-    `<b>Negative:</b> ${data.scores.negative.toFixed(2)}`;
-}
+        const data = await response.json();
 
-      });
-
-      const data = await response.json();
-      const sentiment = data.documents[0].sentiment;
-      const scores = data.documents[0].confidenceScores;
-      
-      document.getElementById('results').innerHTML =
-        `<b>Sentiment:</b> ${sentiment}<br>` +
-        `<b>Positive:</b> ${scores.positive.toFixed(2)}, ` +
-        `<b>Neutral:</b> ${scores.neutral.toFixed(2)}, ` +
-        `<b>Negative:</b> ${scores.negative.toFixed(2)}`;
+        document.getElementById('results').innerHTML =
+          `<b>Sentiment:</b> ${data.sentiment}<br>` +
+          `<b>Positive:</b> ${data.confidenceScores.positive.toFixed(2)}, ` +
+          `<b>Neutral:</b> ${data.confidenceScores.neutral.toFixed(2)}, ` +
+          `<b>Negative:</b> ${data.confidenceScores.negative.toFixed(2)}<br>` +
+          `<b>Key Phrases:</b> ${data.keyPhrases ? data.keyPhrases.join(", ") : "N/A"}`;
+      } catch (err) {
+        console.error(err);
+        alert("Error analyzing text. Make sure the backend is running.");
+      }
     }
   </script>
 </body>
 </html>
-
