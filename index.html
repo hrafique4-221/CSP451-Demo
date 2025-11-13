@@ -1,91 +1,41 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8">
-  <title>Azure Sentiment Analysis Dashboard</title>
-  <style>
-    body { font-family: Arial; padding: 30px; background: #f7f9fb; }
-    h1 { color: #0078d4; text-align: center; }
-    textarea { width: 100%; height: 120px; font-size: 16px; padding: 10px; margin-top: 10px; border-radius: 6px; border: 1px solid #ccc; }
-    button { background-color: #0078d4; color: white; padding: 10px 18px; border: none; border-radius: 6px; font-size: 16px; cursor: pointer; margin-top: 10px; }
-    button:hover { background-color: #005fa3; }
-    #results { margin-top: 25px; background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-    .keyphrase { display: inline-block; background-color: #e1ecf4; color: #0366d6; border-radius: 4px; padding: 4px 8px; margin: 2px; font-size: 14px; }
-  </style>
+  <title>Sentiment Analysis Demo</title>
 </head>
 <body>
-  <h1>Azure Sentiment Analysis</h1>
-  <textarea id="userText" placeholder="Type or paste text to analyze..."></textarea>
-  <button onclick="analyzeSentiment()">Analyze</button>
+  <h1>Sentiment Analysis Demo</h1>
+  <textarea id="userText" rows="4" cols="50" placeholder="Type your text here"></textarea><br>
+  <button onclick="analyzeText()">Analyze</button>
+
+  <h2>Results:</h2>
   <div id="results"></div>
 
-  <!-- Cosmos JS SDK -->
-  <script src="https://unpkg.com/@azure/cosmos@3.22.0/dist/cosmos.min.js"></script>
   <script>
-    // Text Analytics setup
-    const taEndpoint = "https://textanalytics1890114.cognitiveservices.azure.com/";
-    const taKey = "167bc78bf8dd431a808011ad307c291b";
+    async function analyzeText() {
+      const text = document.getElementById('userText').value;
+      if (!text) return alert("Enter text first!");
 
-    // Cosmos DB setup
-    const cosmosEndpoint = "https://cosmos1890114.documents.azure.com:443/";
-    const cosmosKey = "XpRqcSAwwZ3Mhvh6kwvHT6uBkbnVgYHqsXayKihvc1tJdn8f3y1Zn8JZJpJ3357b6oR5Qw13fAyVACDbFdTOdw==";
-    const databaseId = "SentimentDB";
-    const containerId = "Feedbacks";
+      const response = await fetch("https://eastus.api.cognitive.microsoft.com/text/analytics/v3.1/sentiment", {
+        method: "POST",
+        headers: {
+          "Ocp-Apim-Subscription-Key": "167bc78bf8dd431a808011ad307c291b",
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          documents: [{ id: "1", language: "en", text: text }]
+        })
+      });
 
-    async function analyzeSentiment() {
-      const text = document.getElementById("userText").value.trim();
-      const resultDiv = document.getElementById("results");
-
-      if (!text) {
-        alert("Please enter some text!");
-        return;
-      }
-
-      try {
-        // Call Azure Text Analytics
-        const response = await fetch(`${taEndpoint}text/analytics/v3.1/sentiment`, {
-          method: "POST",
-          headers: {
-            "Ocp-Apim-Subscription-Key": taKey,
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({ documents: [{ id: "1", language: "en", text: text }] })
-        });
-
-        const data = await response.json();
-        const doc = data.documents[0];
-
-        const sentiment = doc.sentiment;
-        const confidence = doc.confidenceScores;
-        const keyPhrases = doc.keyPhrases || [];
-
-        // Display results
-        resultDiv.innerHTML = `
-          <h2>Results</h2>
-          <p><strong>Sentiment:</strong> ${sentiment}</p>
-          <p><strong>Confidence Scores:</strong> Positive: ${confidence.positive.toFixed(2)}, Neutral: ${confidence.neutral.toFixed(2)}, Negative: ${confidence.negative.toFixed(2)}</p>
-          <h3>Key Phrases</h3>
-          ${keyPhrases.map(p => `<span class='keyphrase'>${p}</span>`).join(" ")}
-        `;
-
-        // Save result to Cosmos DB
-        const { CosmosClient } = window.AzureCosmos;
-        const client = new CosmosClient({ endpoint: cosmosEndpoint, key: cosmosKey });
-        const container = client.database(databaseId).container(containerId);
-
-        await container.items.create({
-          id: Date.now().toString(),
-          text: text,
-          sentiment: sentiment,
-          confidenceScore: confidence,
-          keyPhrases: keyPhrases,
-          timestamp: new Date().toISOString()
-        });
-
-      } catch (err) {
-        console.error(err);
-        resultDiv.innerHTML = `<p style="color:red;">Error: ${err.message}</p>`;
-      }
+      const data = await response.json();
+      const sentiment = data.documents[0].sentiment;
+      const scores = data.documents[0].confidenceScores;
+      
+      document.getElementById('results').innerHTML =
+        `<b>Sentiment:</b> ${sentiment}<br>` +
+        `<b>Positive:</b> ${scores.positive.toFixed(2)}, ` +
+        `<b>Neutral:</b> ${scores.neutral.toFixed(2)}, ` +
+        `<b>Negative:</b> ${scores.negative.toFixed(2)}`;
     }
   </script>
 </body>
