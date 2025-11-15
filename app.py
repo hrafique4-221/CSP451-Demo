@@ -13,7 +13,10 @@ app = Flask(__name__)
 TEXT_ANALYTICS_KEY = "167bc78bf8dd431a808011ad307c291b"
 TEXT_ANALYTICS_ENDPOINT = "https://eastus.api.cognitive.microsoft.com/"
 
-client = TextAnalyticsClient(endpoint=TEXT_ANALYTICS_ENDPOINT, credential=AzureKeyCredential(TEXT_ANALYTICS_KEY))
+client = TextAnalyticsClient(
+    endpoint=TEXT_ANALYTICS_ENDPOINT,
+    credential=AzureKeyCredential(TEXT_ANALYTICS_KEY)
+)
 
 # -----------------------------
 # Cosmos DB Config (HARD-CODED)
@@ -25,7 +28,7 @@ cosmos_client = CosmosClient(COSMOS_ENDPOINT, COSMOS_KEY)
 database = cosmos_client.create_database_if_not_exists(id="SentimentDB")
 container = database.create_container_if_not_exists(
     id="AnalysisResults",
-    partition_key=PartitionKey(path="/id"),
+    partition_key=PartitionKey(path="/id")
 )
 
 # -----------------------------
@@ -46,11 +49,9 @@ def analyze():
 
     # Sentiment analysis
     sentiment_result = client.analyze_sentiment([text])[0]
-
-    # Key phrases
     key_phrases_result = client.extract_key_phrases([text])[0]
 
-    # Save to Cosmos
+    # Save to Cosmos DB
     result = {
         "id": str(datetime.utcnow().timestamp()),
         "text": text,
@@ -71,4 +72,4 @@ def analyze():
 # Run app
 # -----------------------------
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
+    app.run(host="0.0.0.0", port=5000)
